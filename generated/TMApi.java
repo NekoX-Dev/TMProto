@@ -116,16 +116,16 @@ public class TMApi {
         }
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
-            layer = stream.readInt32(exception);
-            appVersion = stream.readInt32(exception);
+            layer = stream.readByte(exception);
+            appVersion = stream.readByte(exception);
             platform = stream.readString(exception);
             systemVersion = stream.readString(exception);
             session = stream.readByteArray(exception);
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
-            stream.writeInt32(layer);
-            stream.writeInt32(appVersion);
+            stream.writeByte(layer);
+            stream.writeByte(appVersion);
             stream.writeString(platform);
             stream.writeString(systemVersion);
             stream.writeByteArray(session);
@@ -203,11 +203,11 @@ public class TMApi {
         }
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
-            length = stream.readInt32(exception);
+            length = stream.readByte(exception);
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
-            stream.writeInt32(length);
+            stream.writeByte(length);
         }
 
     }
@@ -230,11 +230,11 @@ public class TMApi {
         }
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
-            length = stream.readInt32(exception);
+            length = stream.readByte(exception);
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
-            stream.writeInt32(length);
+            stream.writeByte(length);
         }
 
     }
@@ -258,11 +258,11 @@ public class TMApi {
         }
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
-            length = stream.readInt32(exception);
+            length = stream.readByte(exception);
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
-            stream.writeInt32(length);
+            stream.writeByte(length);
         }
 
     }
@@ -291,13 +291,28 @@ public class TMApi {
         }
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
+            int flag = stream.readByte(exception);
             phoneNumber = stream.readString(exception);
             type = (AuthenticationCodeType) TMStore.deserializeFromSteam(stream, exception);
-            nextType = (AuthenticationCodeType) TMStore.deserializeFromSteam(stream, exception);
+            if ((flag & 1 << 1) == 1 << 1) {
+                nextType = (AuthenticationCodeType) TMStore.deserializeFromSteam(stream, exception);
+            }
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
+            int flag = 0;
+            if (nextType != null) {
+                flag |= 1 << 1;
+            }
+            stream.writeByte(flag);
+            stream.writeString(phoneNumber);
+            TMStore.serializeToStream(stream, type);
+            if (nextType != null) {
+                TMStore.serializeToStream(stream, nextType);
+            }
+            stream.writeInt32(timeout);
         }
+
     }
 
     public static class EmailAddressAuthenticationCodeInfo extends Object {
@@ -319,17 +334,16 @@ public class TMApi {
             return 0xb;
         }
 
-        @Override
         public void readParams(AbstractSerializedData stream, boolean exception) {
             emailAddressPattern = stream.readString(exception);
             length = stream.readInt32(exception);
         }
 
-        @Override
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeString(emailAddressPattern);
             stream.writeInt32(length);
         }
+
     }
 
     public static abstract class AuthorizationState extends Object {
@@ -337,9 +351,11 @@ public class TMApi {
 
 
     public static class AuthorizationStateWaitPhoneNumber extends AuthorizationState {
+
         public int getConstructor() {
             return 0xc;
         }
+
     }
 
 
@@ -347,17 +363,22 @@ public class TMApi {
 
         public AuthenticationCodeInfo codeInfo;
 
+        public AuthorizationStateWaitCode() {
+        }
+
+        public AuthorizationStateWaitCode(AuthenticationCodeInfo codeInfo) {
+            this.codeInfo = codeInfo;
+        }
+
         public int getConstructor() {
             return 0xd;
         }
 
-        @Override
         public void readParams(AbstractSerializedData stream, boolean exception) {
             codeInfo = new AuthenticationCodeInfo();
             codeInfo.readParams(stream, exception);
         }
 
-        @Override
         public void serializeToStream(AbstractSerializedData stream) {
             codeInfo.serializeToStream(stream);
         }
@@ -365,19 +386,100 @@ public class TMApi {
     }
 
     public static class AuthorizationStateWaitRegistration extends AuthorizationState {
+
         public int getConstructor() {
             return 0xe;
         }
+
     }
 
-
     public static class AuthorizationStateWaitPassword extends AuthorizationState {
+
+        public String passwordHint;
+        public boolean hasRecoveryEmailAddress;
+        public String recoveryEmailAddressPattern;
+
+        public AuthorizationStateWaitPassword() {
+        }
+
+        public AuthorizationStateWaitPassword(String passwordHint, boolean hasRecoveryEmailAddress, String recoveryEmailAddressPattern) {
+            this.passwordHint = passwordHint;
+            this.hasRecoveryEmailAddress = hasRecoveryEmailAddress;
+            this.recoveryEmailAddressPattern = recoveryEmailAddressPattern;
+        }
+
         public int getConstructor() {
             return 0xf;
         }
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            int flags = stream.readByte(exception);
+            if ((flags & 1 << 1) == 1 << 1) {
+                passwordHint = stream.readString(exception);
+            }
+            hasRecoveryEmailAddress = (flags & 1 << 2) == 1 << 2;
+            recoveryEmailAddressPattern = stream.readString(exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            int flags = 0;
+            if (passwordHint != null) {
+                flags |= 1 << 1;
+            }
+            if (hasRecoveryEmailAddress) {
+                flags |= 1 << 2;
+            }
+            stream.writeByte(flags);
+            if (passwordHint != null) {
+                stream.writeString(passwordHint);
+            }
+            stream.writeString(recoveryEmailAddressPattern);
+        }
+
+    }
+
+    public static class AuthorizationStateReady extends AuthorizationState {
+
+        public int getConstructor() {
+            return 0x10;
+        }
+
+    }
+
+    public static class AuthorizationStateLoggingOut extends AuthorizationState {
+
+        public int getConstructor() {
+            return 0x11;
+        }
+
     }
 
     public static abstract class Update extends Object {
+    }
+
+    public static class UpdateAuthorizationState extends Update {
+
+        public AuthorizationState state;
+
+        public UpdateAuthorizationState() {
+        }
+
+        public UpdateAuthorizationState(AuthorizationState state) {
+            this.state = state;
+        }
+
+        public int getConstructor() {
+            return 0x12;
+        }
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            state = (AuthorizationState) TMStore.deserializeFromSteam(stream, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            TMStore.serializeToStream(stream, state);
+        }
+
     }
 
 }

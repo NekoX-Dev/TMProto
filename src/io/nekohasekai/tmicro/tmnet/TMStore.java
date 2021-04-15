@@ -73,6 +73,15 @@ public class TMStore {
             case 0xf:
                 response = new TMApi.AuthorizationStateWaitPassword();
                 break;
+            case 0x10:
+                response = new TMApi.AuthorizationStateReady();
+                break;
+            case 0x11:
+                response = new TMApi.AuthorizationStateLoggingOut();
+                break;
+            case 0x12:
+                response = new TMApi.UpdateAuthorizationState();
+                break;
             default:
                 throw new IllegalStateException("Unknown constructor" + constructor);
         }

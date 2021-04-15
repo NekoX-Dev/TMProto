@@ -19,5 +19,9 @@ public class TMClassDef {
     public static int TM_STATUS_WAIT_CODE = CONSTRUCTOR++;
     public static int TM_STATUS_WAIT_REGISTRATION = CONSTRUCTOR++;
     public static int TM_STATUS_WAIT_PASSWORD = CONSTRUCTOR++;
+    public static int TM_STATUS_READY = CONSTRUCTOR++;
+    public static int TM_STATUS_LOGOUT = CONSTRUCTOR++;
+
+    public static int TM_UPDATE_STATUS = CONSTRUCTOR++;
 
 }
