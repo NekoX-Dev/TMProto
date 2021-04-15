@@ -1,0 +1,20 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.4.32'
+}
+
+group 'tmicro.proto'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation "cn.hutool:hutool-core:5.6.3"
+    implementation "com.google.code.gson:gson:2.8.6"
+
+}
+
+kotlin.sourceSets["main"].kotlin.srcDirs("src")
+sourceSets["main"].java.srcDirs("src")
