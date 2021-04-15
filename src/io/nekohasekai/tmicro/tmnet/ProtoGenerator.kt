@@ -48,12 +48,15 @@ fun main(args: Array<String>) {
 
     val store = File(root, "TMStore.java")
     var storeSource = store.readText()
-    for (def in defs) {
-        storeSource = storeSource.replace("TMClassDef." + def.key, "0x${Integer.toHexString(def.value)}")
-    }
     storeSource = storeSource.substringBefore("switch (constructor) {") + "switch (constructor) {\n" +
             builder.split("\n").joinToString("\n") { "            $it" } +
             "default:\n                throw new" + storeSource.substringAfter("default:\n                throw new")
+
+    store.writeText(storeSource)
+
+    for (def in defs) {
+        storeSource = storeSource.replace("TMClassDef." + def.key, "0x${Integer.toHexString(def.value)}")
+    }
 
     for (clientRoot in clientRoots) {
         File(clientRoot, store.name).writeText(storeSource)
